@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>가견적 Tool - Web 화면 프로토타입</title>
+<style>
+  :root{
+    --bg: #12161c;
+    --panel: #171c24;
+    --panel-2: #1d232c;
+    --line: #2a3241;
+    --line-strong: #3a4456;
+    --text: #e7ebf1;
+    --text-dim: #9ea9bb;
+    --text-faint: #758197;
+    --cyan: #4fd1c5;
+    --cyan-dim: #1f4a48;
+    --amber: #f0a839;
+    --amber-dim: #4a3a1a;
+    --red: #e2585a;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Pretendard, Roboto, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5}
+  .app{display:grid;grid-template-columns:220px 1fr 260px;min-height:100vh}
+
+  /* Sidebar */
+  .sidebar{background:var(--panel);border-right:1px solid var(--line);padding:20px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .brand{padding:0 18px 18px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brand-tag{font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:.08em}
+  .brand-title{font-size:18px;font-weight:600;margin-top:4px}
+  .brand-sub{font-size:11.5px;color:var(--text-faint);margin-top:2px}
+  .nav-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 18px;margin: 4px 8px;cursor:pointer;border-radius:4px;color:var(--text-dim);font-size:13px;border:1px solid transparent;transition:all .15s ease;}
+  .nav-item:hover{background:#1d2632;color:var(--text)}
+  .nav-item.active{background:rgba(79,209,197,.08);border:1px solid rgba(79,209,197,.45); color:#fff;font-weight:600;box-shadow:inset 3px 0 0 var(--cyan),0 0 12px rgba(79,209,197,.08);}
+
+  /* Main */
+  .main{padding:28px 36px;max-width:920px}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:24px}
+  .page-title{font-size:20px;font-weight:600}
+
+  .module{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:18px;overflow:hidden}
+  .module-head{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .module-name{font-size:13.5px;font-weight:600}
+  .module-code{font-family:var(--mono);font-size:11px;color:var(--text-faint)}
+  .module-body{padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px 20px}
+
+  .field{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .field.wide{grid-column:span 2}
+  .break-row{grid-column:1;}
+  .field-label-row{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+  .field-label{font-size:12.5px;color:var(--text-dim)}
+  .field-id{font-family:var(--mono);font-size:10px;color:var(--text-faint);display:none;}
+  .field-note{margin-top:6px;font-size:11px;color:var(--text-faint);line-height:1.5}
+  .field input[type=text],.field input[type=number],.field select{
+    background:#0f1319;border:1px solid var(--line-strong);color:var(--text);
+    border-radius:6px;padding:8px 10px;font-size:13px;font-family:var(--sans);width:100%
+  }
+  .field input:focus,.field select:focus{outline:none;border-color:var(--cyan)}
+  .field input::placeholder{color:var(--text-faint)}
+  .unit-wrap{position:relative}
+  .unit-wrap input{padding-right:38px}
+  .unit-tag{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:12px;color:var(--text-dim);pointer-events:none}
+
+  .checkbox-field{flex-direction:row;align-items:center;gap:6px;padding:7px 10px;background:#0f1319;border:1px solid var(--line-strong);border-radius:6px;cursor:pointer}
+  .checkbox-field input{width:13px;height:13px;accent-color:var(--cyan)}
+  .checkbox-field .field-label{font-size:12.5px;color:var(--text)}
+
+  .footer-bar{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:14px 36px;display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .footer-status{font-size:12px;color:var(--text-faint)}
+  .footer-status strong{color:var(--amber);font-weight:600}
+  .btn-bom{background:var(--cyan);color:#08201d;border:none;border-radius:7px;padding:11px 22px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+  .btn-bom:hover{opacity:.9}
+  .status-bom-btn{width:100%;margin:12px 0;}
+
+  /* Persistent status panel */
+  .statuspanel{background:var(--panel);border-left:1px solid var(--line);padding:20px 16px;position:sticky;top:0;overflow-y:auto;}
+  .statuspanel-head{margin-bottom:14px}
+  .statuspanel-eyebrow{font-family:var(--mono);font-size:10.5px;color:var(--cyan);letter-spacing:.08em}
+  .statuspanel-title{font-size:13.5px;font-weight:600;margin-top:4px}
+  .live-card{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+  .live-card .field-label{font-size:12px;color:var(--text-dim);display:block;margin-bottom:8px}
+  .live-value{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--cyan)}
+  .live-value.dim{color:var(--text-faint);font-size:13px;font-weight:400}
+  .live-card .need-check{margin-top:8px}
+  .statuspanel-divider{border:none;border-top:1px solid var(--line);margin:16px 0}
+  .status-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12px;}
+  .status-label{color:var(--text-dim);}
+  .status-value{color:var(--text);font-family:var(--mono);}
+
+  /* BOM result modal */
+  .bom-modal{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;z-index:9999;padding:24px}
+  .bom-modal.open{display:flex}
+  .bom-dialog{width:min(1100px,96vw);max-height:90vh;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.45);display:flex;flex-direction:column;overflow:hidden}
+  .bom-dialog-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .bom-dialog-title{font-size:15px;font-weight:600}
+  .bom-dialog-sub{font-size:11px;color:var(--text-faint);margin-top:3px}
+  .bom-dialog-actions{display:flex;gap:8px}
+  .bom-action{background:#0f1319;border:1px solid var(--line-strong);color:var(--text);border-radius:6px;padding:7px 10px;cursor:pointer}
+  .bom-action.primary{background:var(--cyan);color:#08201d;border-color:var(--cyan);font-weight:600}
+  .bom-close{background:transparent;border:0;color:var(--text-dim);font-size:22px;cursor:pointer}
+  .bom-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:14px 20px;border-bottom:1px solid var(--line)}
+  .bom-summary-card{background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:10px 12px}
+  .bom-summary-label{font-size:10.5px;color:var(--text-faint)}
+  .bom-summary-value{font-family:var(--mono);font-size:17px;color:var(--cyan);margin-top:2px}
+  .bom-grid-cols{grid-template-columns:56px 130px 1fr 70px 140px}
+  .bom-grid-header{display:grid;grid-template-columns:56px 130px 1fr 70px 140px;padding:9px 20px;background:var(--panel-2);color:var(--text-dim);font-weight:600;font-size:12px;border-bottom:1px solid var(--line);border-top:1px solid var(--line)}
+  .bom-table-wrap{max-height:min(55vh,520px);overflow:auto;padding:0 20px 20px}
+  .bom-grid-row{display:grid;grid-template-columns:56px 130px 1fr 70px 140px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}
+  .bom-grid-header>div,.bom-grid-row>div{overflow:hidden;text-overflow:ellipsis;padding-right:8px}
+  .bom-grid-row .num,.bom-grid-header .num{text-align:right;font-family:var(--mono)}
+  .bom-empty{padding:20px;text-align:center;color:var(--text-faint)}
+  .bom-error{margin:14px 20px;padding:12px;border:1px solid var(--amber-dim);background:#2a2112;color:#f0c36a;border-radius:7px;font-size:12px;line-height:1.6}
+  @media(max-width:800px){.bom-summary{grid-template-columns:repeat(2,1fr)}}
+
+  ::-webkit-scrollbar{width:10px}
+  ::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:5px}
+
+/* Chrome, Edge, Safari */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number]{
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.module-divider{
+  grid-column:1 / -1;
+  height:1px;
+  background:var(--line);
+  margin:4px 0;
+}
+
+.module-note{
+  padding:10px 18px 0;
+  font-size:13px;
+  color:var(--text-faint);
+}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <div>
+    <div class="main" id="main"></div>
+  </div>
+  <div class="statuspanel" id="statuspanel"></div>
+</div>
+
+<div class="bom-modal" id="bom-modal">
+  <div class="bom-dialog">
+    <div class="bom-dialog-head">
+      <div>
+        <div class="bom-dialog-title">PART LIST 산출 결과</div>
+        <div class="bom-dialog-sub" id="bom-dialog-sub">Spreadsheet Master Data 기준</div>
+      </div>
+      <div class="bom-dialog-actions">
+        <button class="bom-action primary" id="bom-export-btn">Excel 저장</button>
+        <button class="bom-close" id="bom-close-btn">×</button>
+      </div>
+    </div>
+    <div class="bom-summary" id="bom-summary"></div>
+    <div id="bom-error"></div>
+    <div class="bom-grid-header">
+      <div>No.</div><div>자재번호</div><div>품명</div><div class="num">수량</div><div>출처</div>
+    </div>
+    <div class="bom-table-wrap">
+      <div id="bom-result-body"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- Helpers ----
+function escapeHtml(str){
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ---- Dynamic Data Stores for Master Data Sync ----
+let OPTION_MATERIALS = {
+  powerMeters: [],
+  detectors: [],
+  boards: []
+};
+
+// ---- Data model ----
+const SECTIONS = [
+  { code:'PWR/PM', name:'Power', desc:'Power + Powermeter', modules:[
+    { code:'PWR', name:'Power', fields:[
+      // [요청 반영] Volt: 208, 440만 배치
+      {id:'PWR-01', label:'Volt', type:'select', options:['208','440']},
+      {id:'PWR-02', label:'Safety Factor', type:'number', value:1.2},
+      {id:'PWR-03', label:'Main MC', type:'checkbox', BreakRow:true},
+      {id:'PWR-04', label:'Power TB', type:'checkbox'},
+      {id:'PWR-05', label:'UPS', type:'checkbox'},
+    ]},
+    { code:'PM', name:'SMPS', fields:[
+      // [요청 반영] SMPS Volt: 208, 440 / SMPS Watt: 120, 240
+      {id:'ETC-01', label:'SMPS Volt', type:'select', options:['208','440']},
+      {id:'ETC-02', label:'SMPS Watt', type:'select', options:['120','240']},
+    ]},
+    { code:'PM', name:'Powermeter', fields:[
+      // [요청 반영] 옵션자재 C열(전력량계) -> J열 연동
+      {id:'PM-01', label:'Model', type:'select', options:[], dynamicKey:'powerMeters'},
+      {id:'PM-03', label:'CT', type:'number', placeholder:'채널 입력', unit:'Ch'},
+    ]},
+  ]},
+
+  { code:'CUS/ETC', name:'Customer / Option', desc:'Customer + ETC', modules:[
+    { code:'CUS', name:'Customer', note:'SDC 외에는 SEC 기준으로 Part List 작성 되고 있음', fields:[
+      {id:'CUS-01', label:'SEC', type:'checkbox'},
+      {id:'CUS-02', label:'SDC', type:'checkbox'},
+      {id:'CUS-03', label:'Hynix', type:'checkbox'},
+      {id:'CUS-04', label:'ETC', type:'checkbox'},
+    ]},
+    { code:'ETC', name:'ETC', fields:[
+      {id:'ETC-03', label:'TR', type:'checkbox', BreakRow:true},
+      {id:'ETC-06', label:'Outlet', type:'checkbox'},
+      {id:'PM-02', label:'Phase Relay', type:'checkbox', },
+      {id:'FAN-01', label:'FAN', type:'number', unit:'EA'},
+    ]},
+  ]},
+
+  { code:'HT', name:'Heater', desc:'Heater Watt', modules:[
+    { code:'HT', name:'Heater Watt', fields:[
+      {id:'HT-01', label:'Heater 1', type:'number', unit:'W'},
+      {id:'HT-02', label:'Heater 2', type:'number', unit:'W'},
+      {id:'HT-03', label:'Heater 3', type:'number', unit:'W', BreakRow:true},
+      {id:'HT-04', label:'Heater 4', type:'number', unit:'W'},
+      {id:'HT-05', label:'Heater 5', type:'number', unit:'W', BreakRow:true},
+      {id:'HT-06', label:'Heater 6', type:'number', unit:'W'},
+      {id:'HT-07', label:'Heater 7', type:'number', unit:'W', BreakRow:true},
+      {id:'HT-08', label:'Heater 8', type:'number', unit:'W',},
+      {id:'HT-09', label:'TIC', type:'number', unit:'EA', placeholder:'SDC만 기입', BreakRow:true},
+    ]},
+  ]},
+
+  { code:'P/C', name:'Pump / Compressor', desc:'Pump & Compressor Ampere', modules:[
+    { code:'PC', name:'Pump Ampere', fields:[
+      {id:'PC-01', label:'Pump 1', type:'number', unit:'A'},
+      {id:'PC-02', label:'Pump 2', type:'number', unit:'A'},
+      {id:'PC-03', label:'Pump 3', type:'number', unit:'A'},
+      {id:'PC-04', label:'Pump 4', type:'number', unit:'A'},
+      {id:'PC-05', label:'Pump 5', type:'number', unit:'A'},
+      {id:'PC-06', label:'Pump 6', type:'number', unit:'A'},
+      {id:'PC-13', label:'Pump Inverter (All Ch)', type:'checkbox', BreakRow:true, },
+   ]},
+ { code:'Comp', name:'Compressor Ampere', fields:[
+      {id:'PC-07', label:'Comp.1', type:'number', unit:'A'},
+      {id:'PC-08', label:'Comp.2', type:'number', unit:'A'},
+      {id:'PC-09', label:'Comp.3', type:'number', unit:'A'},
+      {id:'PC-10', label:'Comp.4', type:'number', unit:'A'},
+      {id:'PC-11', label:'Comp.5', type:'number', unit:'A'},
+      {id:'PC-12', label:'Comp.6', type:'number', unit:'A'},
+    ]},
+  ]},
+
+  { code:'TEM', name:'TEM Model', desc:'TEM Model', modules:[
+    { code:'TEM', name:'TEM Model', note:'Single: SMPS 1개 선택, Dual: SMPS 2개 선택. SMPS 3개일 때는 Cable Dual 선택하지 말 것', fields:[
+      {id:'TEM-01', label:'SMPS1', type:'select', options:['NHPP-6921','NHPP-7325','CHPP-8022']},
+      {id:'TEM-02', label:'SMPS2', type:'select', options:['NHPP-6921','NHPP-7325','CHPP-8022']},
+      {id:'TEM-03', label:'SMPS3', type:'select', options:['NHPP-6921','NHPP-7325','CHPP-8022'], BreakRow:true},
+      {id:'TEM-04', label:'SMPS4', type:'select', options:['NHPP-6921','NHPP-7325','CHPP-8022']},
+      {id:'TEM-05', label:'RCP', type:'number', unit:'Ch',},
+      {id:'TEM-06', label:'Cable', type:'select', options:['Single','Dual']},
+      {id:'TEM-07', label:'Temos', type:'checkbox',},
+      {id:'TEM-08', label:'전기식', type:'checkbox'},
+    ]},
+  ]},
+
+  { code:'VAL', name:'Valve / Sensor', desc:'Valve / Sensor', modules:[
+    { code:'VAL', name:'Valve', note:'CP는 Valve 개별 제어 또는 그룹 제어에 사용할 수 있음', fields:[
+      {id:'VAL-01', label:'AC', type:'number', unit:'EA'},
+      {id:'VAL-02', label:'AC CP', type:'number', unit:'EA'},
+      {type:'divider'},
+      {id:'VAL-03', label:'DC', type:'number', unit:'EA', BreakRow:true},
+      {id:'VAL-04', label:'DC CP', type:'number', unit:'EA'},
+    ]},
+
+    { code:'SNS', name:'Sensor', fields:[
+      {id:'SNS-01', label:'Leak', type:'text', unit:'EA'},
+      {type:'divider'},
+      {id:'SNS-02', label:'Level', type:'text', unit:'EA', BreakRow:true},
+      {id:'SNS-03', label:'Float', type:'checkbox', },
+      {id:'SNS-04', label:'Photocell', type:'checkbox',},
+      {type:'divider'},
+      {id:'SMK-01', label:'Smoke', type:'select', options:[], dynamicKey:'detectors'},
+      {id:'SMK-02', label:'Qty', type:'number', unit:'EA'},
+    ]},
+  ]},
+
+  { code:'PLC', name:'PLC', desc:'AD/Temp · DA · Digital I/O', modules:[
+    { code:'PLC-AD', name:'Temp / Analog Input', fields:[
+      {id:'PLC-02', label:'RTD', type:'number', unit:'Ch'},
+      {id:'PLC-03', label:'TC', type:'number', unit:'Ch'},
+      {id:'PLC-01', label:'Analog Input', type:'number', unit:'Ch', BreakRow:true},
+    ]},
+    { code:'PLC-DA', name:'Analog Output', note:'Output 출력에 부속품이 필요한 Board류는 선택 후 수량 기입, 별도 부속품 없이 Output만 필요한 경우 ETC에 기입', fields:[
+      // [요청 반영] 옵션자재 C열(Board) -> J열 연동
+      {id:'PLC-04', label:'Board 1', type:'select', options:[], dynamicKey:'boards'},
+      {id:'PLC-05', label:'Qty', type:'number', unit:'EA'},
+      {id:'PLC-06', label:'Board 2', type:'select', options:[], dynamicKey:'boards', BreakRow:true},
+      {id:'PLC-07', label:'Qty', type:'number', unit:'EA'},
+      {id:'PLC-08', label:'Board 3', type:'select', options:[], dynamicKey:'boards', BreakRow:true},
+      {id:'PLC-09', label:'Qty', type:'number', unit:'EA',},
+      {id:'PLC-10', label:'ETC Qty', type:'number', unit:'EA', BreakRow:true},
+    ]},
+    { code:'PLC-IO', name:'Digital Input / Output', fields:[
+      {id:'PLC-11', label:'Input', type:'select', options:['16','32','64']},
+      {id:'PLC-12', label:'Input Add', type:'number', placeholder:'Input 수를 늘리고 싶을 때 입력'},
+      {id:'PLC-13', label:'Output', type:'select', options:['16','32','64'], BreakRow:true},
+      {id:'PLC-14', label:'Output Add', type:'number', placeholder:'Output 수를 늘리고 싶을 때 입력'},
+      {id:'PLC-15', label:'PLC', type:'select', options:['CJ2M'], value:'CJ2M', BreakRow:true},
+      {id:'PLC-16', label:'Remote I/O', type:'checkbox'},
+    ]},
+  ]},
+
+  { code:'COM', name:'Communication', desc:'Communication', modules:[
+    { code:'COM', name:'PLC Communication', fields:[
+      {id:'COM-01', label:'RS232/232', type:'text', unit:'EA'},
+      {id:'COM-02', label:'RS485/422', type:'text', unit:'EA'},
+      {id:'COM-03', label:'RS232/485', type:'text', unit:'EA'},
+      {id:'COM-04', label:'Ethernet', type:'text', unit:'EA'},
+      {id:'COM-05', label:'Devicenet', type:'text', unit:'EA'},
+    ]},
+    { code:'COM', name:'Board Communication', fields:[
+      {id:'COM-06', label:'I/O Board', type:'text', unit:'EA'},
+      {id:'COM-07', label:'Comm Board', type:'checkbox',},
+      {id:'COM-08', label:'LonWorks', type:'checkbox'},
+      {id:'COM-09', label:'EtherCat', type:'checkbox'},
+    ]},
+  ]},
+
+];
+
+const LIVE_VALUES = [
+  {id:'live-in', label:'PLC Input'},
+  {id:'live-out', label:'PLC Output'},
+  {id:'live-curr', label:'Current'},
+];
+
+// ---- Render ----
+let activeIdx = 0;
+const FIELD_STATE = {};
+
+function fieldHTML(f, moduleCode){
+  const ncBadge = f.nc ? `<div class="need-check">${f.nc}</div>` : '';
+  const noteHtml = f.note ? `<div class="field-note">${f.note}</div>` : '';
+  const dataAttr = `data-field-id="${f.id}" data-field-label="${f.label}" data-module-code="${moduleCode}"`;
+  const saved = FIELD_STATE[f.id] ?? f.value ?? undefined;
+
+  if(f.type === 'divider'){
+    return `<div class="module-divider"></div>`;
+    }
+
+  if(f.type === 'checkbox'){
+    const checkedAttr = saved === 'Y' ? ' checked' : '';
+    return `<label class="field ${f.wide?'wide':''} ${f.BreakRow ? 'break-row' : ''}" style="justify-content:flex-end">
+      <div class="checkbox-field">
+        <input type="checkbox" ${dataAttr}${checkedAttr} />
+        <span class="field-label">${f.label}</span>
+      </div>
+      ${ncBadge}${noteHtml}
+    </label>`;
+  }
+  if(f.type === 'select'){
+    let optsList = f.options || [];
+    if(f.dynamicKey && OPTION_MATERIALS[f.dynamicKey]){
+      optsList = OPTION_MATERIALS[f.dynamicKey];
+    }
+   const opts = optsList.map(o=>`<option ${o===saved?'selected':''}>${escapeHtml(o)}</option>`).join('');
+   return `<div class="field ${f.wide?'wide':''} ${f.BreakRow ? 'break-row' : ''}">
+     <div class="field-label-row"><span class="field-label">${f.label}</span><span class="field-id">${f.id}</span></div>
+     <select ${dataAttr}><option value="" ${!saved?'selected':''}>선택</option>${opts}</select>
+     ${ncBadge}${noteHtml}
+   </div>`;
+  }
+  const inputType = f.type === 'number' ? 'number' : 'text';
+  const ph = f.placeholder ? ` placeholder="${f.placeholder}"` : '';
+  const valAttr = ` value="${escapeHtml(saved ?? '')}"`;
+  if(f.unit){
+    return `<div class="field ${f.wide?'wide':''} ${f.BreakRow ? 'break-row' : ''}">
+      <div class="field-label-row"><span class="field-label">${f.label}</span><span class="field-id">${f.id}</span></div>
+      <div class="unit-wrap"><input type="${inputType}" ${dataAttr}${ph}${valAttr}/><span class="unit-tag">${f.unit}</span></div>
+      ${ncBadge}${noteHtml}
+    </div>`;
+  }
+  return `<div class="field ${f.wide?'wide':''}">
+    <div class="field-label-row"><span class="field-label">${f.label}</span><span class="field-id">${f.id}</span></div>
+    <input type="${inputType}" ${dataAttr}${ph}${valAttr}/>
+    ${ncBadge}${noteHtml}
+  </div>`;
+}
+
+// 복수 선택이 안 되어야 하는 체크박스 그룹 (하나 켜면 나머지는 자동으로 꺼짐)
+const EXCLUSIVE_CHECKBOX_GROUPS = [
+  ['CUS-01', 'CUS-02', 'CUS-03', 'CUS-04'], // 고객사(SEC/SDC/Hynix/ETC): 복수 선택 불가
+];
+
+function applyExclusiveGroup(changedId){
+  const group = EXCLUSIVE_CHECKBOX_GROUPS.find(g => g.includes(changedId));
+  if(!group) return;
+  if(FIELD_STATE[changedId] !== 'Y') return; // 체크 해제는 그대로 둔다
+  group.forEach(otherId=>{
+    if(otherId === changedId) return;
+    FIELD_STATE[otherId] = 'N';
+    const el = document.querySelector(`#main [data-field-id="${otherId}"]`);
+    if(el && el.type === 'checkbox') el.checked = false;
+  });
+}
+
+function attachFieldListeners(){
+  document.querySelectorAll('#main [data-field-id]').forEach(el=>{
+    const id = el.dataset.fieldId;
+    const handler = ()=>{
+      FIELD_STATE[id] = el.type === 'checkbox' ? (el.checked ? 'Y' : 'N') : el.value;
+      applyExclusiveGroup(id);
+      updateLiveCalculations();
+    };
+    el.addEventListener('input', handler);
+    el.addEventListener('change', handler);
+  });
+}
+
+function renderSidebar(){
+  const el = document.getElementById('sidebar');
+  el.innerHTML = `
+    <div class="brand">
+      <div class="brand-tag">PART LIST-TOOL / WEB</div>
+      <div class="brand-title">가견적 Tool</div>
+    </div>
+  ` + SECTIONS.map((s,i)=>`
+    <div class="nav-item ${i===activeIdx?'active':''}" data-idx="${i}">
+      <span style="display:flex;align-items:center">${s.name}</span>
+    </div>
+  `).join('');
+  el.querySelectorAll('.nav-item').forEach(n=>{
+    n.addEventListener('click', ()=>{ activeIdx = parseInt(n.dataset.idx); renderAll(); });
+  });
+}
+
+function renderMain(){
+  const s = SECTIONS[activeIdx];
+  const el = document.getElementById('main');
+  let modulesHTML = s.modules.map(m => `
+    <div class="module">
+      <div class="module-head">
+        <span class="module-name">${m.name}</span>
+      </div>
+      ${m.note ? `<div class="module-note">※ ${m.note}</div>` : ''}
+      <div class="module-body">
+        ${m.fields.map(f=>fieldHTML(f,m.code)).join('')}
+      </div>
+    </div>
+  `).join('');
+
+
+  el.innerHTML = `
+    <div class="page-head">
+      <div>
+        <div class="page-title">${s.name}</div>
+      </div>
+    </div>
+    ${modulesHTML}
+  `;
+}
+
+function renderStatusPanel(){
+  const el = document.getElementById('statuspanel');
+
+  el.innerHTML = `
+    <div class="statuspanel-head">
+      <div class="statuspanel-eyebrow">STATUS</div>
+      <div class="statuspanel-title">Project Summary</div>
+    </div>
+
+    <div class="status-row">
+      <span class="status-label">Volt</span>
+      <span class="status-value" id="status-volt">-</span>
+    </div>
+
+    <div class="status-row">
+      <span class="status-label">Current</span>
+      <span class="status-value" id="status-current">-</span>
+    </div>
+
+    <hr class="statuspanel-divider"/>
+
+    <div class="status-row">
+      <span class="status-label">Digital Input</span>
+      <span class="status-value" id="status-plc-in">0 Ch</span>
+    </div>
+
+    <div class="status-row">
+      <span class="status-label">Digital Output</span>
+      <span class="status-value" id="status-plc-out">0 Ch	</span>
+    </div>
+
+    <button class="btn-bom status-bom-btn" id="bom-btn-side">
+      PART LIST 작성
+    </button>
+  `;
+}
+
+
+function updateLiveCalculations(){
+
+  const { totalDI, totalDO } = calcDigitalChannels();
+
+  const voltage = getInputValue('PWR-01');
+  const current = calcMainBreakerCurrent(voltage);
+
+  document.getElementById('status-volt').textContent =
+    voltage ? `${voltage}V` : '-';
+
+  document.getElementById('status-current').textContent =
+    current > 0 ? `${current.toFixed(1)} A` : '-';
+
+  document.getElementById('status-plc-in').textContent =
+    `${totalDI} Ch`;
+
+  document.getElementById('status-plc-out').textContent =
+    `${totalDO} Ch`;
+}
+
+function renderAll(){
+  renderSidebar();
+  renderMain();
+  renderStatusPanel();
+  attachFieldListeners();
+  updateLiveCalculations();
+}
+
+// ---- Google Apps Script / Spreadsheet + BOM 연동 ----
+const GOOGLE_APPS_SCRIPT_URL =
+  'https://script.google.com/macros/s/AKfycbyBYVSj2NEjFSenXVCcud6wXGZCzES9XhKUZ79UmFBU-3xm_gTC7983oyUAGcIsO2xiXQ/exec';
+
+const BOM_SHEETS = ['Heater','Pump','Compressor','PLC','MainBreaker','TEM','옵션자재','기본자재'];
+let LAST_BOM_RESULT = [];
+
+function getInputValue(id){
+  const raw = FIELD_STATE[id];
+  return raw ?? '';
+}
+
+function num(v){
+  if(v === null || v === undefined || String(v).trim()==='' || String(v).trim().toUpperCase()==='ALL') return null;
+  const n = Number(String(v).replace(/,/g,''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function norm(v){ return String(v ?? '').trim(); }
+function isAll(v){ return norm(v).toUpperCase() === 'ALL'; }
+
+function normalizeSheetRows(rows){
+  if(!Array.isArray(rows)) return [];
+  return rows.map(r=>{
+    if(Array.isArray(r)){
+      return {A:r[0],B:r[1],C:r[2],D:r[3],E:r[4],F:r[5],G:r[6],H:r[7],I:r[8],J:r[9], _qty:r[10] ?? 1};
+    }
+    return {
+      A:r.A ?? r.a ?? r.항목 ?? '', B:r.B ?? r.b ?? r.Voltage ?? r.voltage ?? '',
+      C:r.C ?? r.c ?? r.부품구분 ?? '', D:r.D ?? r.d ?? r.최소용량 ?? '', E:r.E ?? r.e ?? r.최대용량 ?? '',
+      F:r.F ?? r.f ?? r.최소전류 ?? '', G:r.G ?? r.g ?? r.최대전류 ?? '', H:r.H ?? r.h ?? r.메인부품조건 ?? '',
+      I:r.I ?? r.i ?? r.자재번호 ?? '', J:r.J ?? r.j ?? r.품명 ?? '',
+      _qty:r.qty ?? r.quantity ?? r.수량 ?? 1
+    };
+  });
+}
+
+// [요청 반영] 초기 데이터 로드 시 옵션자재 Sheet 필터링 적용
+async function initMasterData(){
+  try {
+    const masterData = await fetchBOMMasterData();
+    const optRows = masterData['옵션자재'] || [];
+
+    const powerMeters = new Set();
+    const detectors = new Set();
+    const boards = new Set();
+
+    optRows.forEach(r => {
+      const cVal = norm(r.C).toLowerCase();
+      const jVal = norm(r.J);
+      if(!jVal) return;
+
+      if(cVal === '전력량계') powerMeters.add(jVal);
+      if(cVal === 'detector' || cVal === 'detecor') detectors.add(jVal);
+      if(cVal === 'board') boards.add(jVal);
+    });
+
+    OPTION_MATERIALS.powerMeters = Array.from(powerMeters);
+    OPTION_MATERIALS.detectors = Array.from(detectors);
+    OPTION_MATERIALS.boards = Array.from(boards);
+
+    renderAll();
+  } catch(e) {
+    console.error("Master Data 연결 중 오류 발생:", e);
+  }
+}
+
+async function fetchBOMMasterData(){
+  const url = `${GOOGLE_APPS_SCRIPT_URL}?action=getBOMData`;
+  const response = await fetch(url, {method:'GET', cache:'no-store'});
+  if(!response.ok) throw new Error(`Spreadsheet 조회 HTTP ${response.status}`);
+  const text = await response.text();
+  let payload;
+  try { payload = JSON.parse(text); }
+  catch(e){ throw new Error('Apps Script가 JSON 형식의 PART LIST 데이터를 반환하지 않았습니다.'); }
+
+  const sheets = payload.sheets || payload.data || payload;
+  const normalized = {};
+  BOM_SHEETS.forEach(name=> normalized[name] = normalizeSheetRows(sheets[name] || []));
+  return normalized;
+}
+
+function voltageMatch(row, voltage){
+  const v = norm(row.B);
+  return isAll(v) || v === norm(voltage);
+}
+
+function rangeMatch(value, minV, maxV){
+  const x = num(value);
+  if(x === null) return false;
+  const min = num(minV);
+  const max = num(maxV);
+  // 최소값=최대값인 '포인트' 조건(예: F=G=15)은 정확히 일치할 때로 판정한다.
+  // min<=x<max 규칙을 그대로 쓰면 min===max일 때 항상 거짓이 되어 영원히 매칭되지 않는다.
+  if(min !== null && max !== null && min === max){
+    return Math.abs(x - min) < 1e-6;
+  }
+  const minOK = min === null || x >= min;
+  const maxOK = max === null || x < max;
+  return minOK && maxOK;
+}
+
+function rangeMatchOrAll(value, minV, maxV){
+  if(isAll(minV) || isAll(maxV)) return true;
+  return rangeMatch(value, minV, maxV);
+}
+
+function ceilDiv(a,b){
+  const A = num(a) || 0, B = num(b) || 0;
+  if(!B) return 0;
+  return Math.ceil(A / B);
+}
+
+function findRowsByPart(rows, partCode){
+  return rows.filter(r => norm(r.C).toLowerCase() === String(partCode).toLowerCase());
+}
+
+function addFirstMatch(resultMap, rows, source, partCode, qty){
+  const q = num(qty) || 0;
+  if(q <= 0) return;
+  const matches = findRowsByPart(rows, partCode);
+  if(!matches.length) return;
+  addBom(resultMap, matches[0], source, q);
+}
+
+function addBom(resultMap, row, source, qty=1){
+  const material = norm(row.I);
+  if(!material) return;
+  const name = norm(row.J);
+  const q = num(qty) ?? 1;
+  if(!resultMap.has(material)){
+    resultMap.set(material,{materialNo:material,name,quantity:q,sources:new Set([source]),qtyBySource:{[source]:q}});
+  }else{
+    const item=resultMap.get(material);
+    item.quantity += q;
+    if(name && !item.name) item.name=name;
+    item.sources.add(source);
+    item.qtyBySource[source] = (item.qtyBySource[source] || 0) + q;
+  }
+}
+
+// 통일된 규칙: H열 값이 "OO Check" 형태면 그 이름 그대로 해당 체크박스 필드에 매핑한다.
+// A/C열(카테고리)이 아니라 H열 값 자체로 판정하므로, 같은 A열 안에 서로 다른 조건이
+// 섞여 있어도 행 단위로 정확히 갈린다. Heater/Pump/Compressor(addByCondition)와
+// MainBreaker(addMainBreaker) 양쪽에서 공통으로 쓴다.
+// 새 'OO Check' 조건부 부품을 추가할 때는 시트에 H='OO Check'라고 적고 여기에 한 줄만 추가하면 된다.
+// 주의: 이 표에 등록된 문자열('UPS Check' 등)은 Heater/Pump/Compressor/MainBreaker/PLC의
+// H열에서 예약어처럼 취급된다 — 부속품 문자열 매칭(예: 'EBS','LC1','FRN') 용도로
+// 우연히 똑같은 문자열을 재사용하면 안 된다.
+const OPTION_CHECK_MAP = {
+  'UPS Check': 'PWR-05',
+  'SDC Check': 'CUS-02',
+  'Phase Realy Check': 'PM-02',
+  'Outlet Check': 'ETC-06',
+  'Comm Board Check': 'COM-07',
+  'Inverter Check': 'PC-13',
+  'LonWorks Check': 'COM-08',
+  'EtherCat Check': 'COM-09',
+};
+
+// H열이 'OO Check' 형태(OPTION_CHECK_MAP에 등록된 값)면 체크박스 on/off로 게이트하고,
+// 그 외 H열이 있는 행은 기존처럼 부속품으로 보고 여기서 건너뛴다(sweepSubParts가 처리).
+// 같은 부품구분(C열)에서 전압 전용 행과 ALL(공통) 행이 둘 다 조건을 만족하면 전압 전용을 우선한다.
+function addByCondition(resultMap, rows, source, voltage, value, mode){
+  const selectedByPart = new Map();
+  rows.forEach(row=>{
+    if(!voltageMatch(row, voltage)) return;
+
+    const h = norm(row.H);
+    if(h){
+      if(OPTION_CHECK_MAP[h]){
+        if(getInputValue(OPTION_CHECK_MAP[h]) !== 'Y') return;
+      } else {
+        return; // 부속품 문자열 조건 — 여기서는 처리하지 않는다.
+      }
+    }
+
+    let pass = false;
+    if(mode === 'W') pass = rangeMatchOrAll(value, row.D, row.E);
+    if(mode === 'A') pass = rangeMatchOrAll(value, row.F, row.G);
+    if(!pass) return;
+
+    const part = norm(row.C) || `__ROW_${rows.indexOf(row)}`;
+    const existing = selectedByPart.get(part);
+    if(!existing){
+      selectedByPart.set(part, row);
+    } else if(norm(existing.B).toUpperCase() === 'ALL' && norm(row.B).toUpperCase() !== 'ALL'){
+      selectedByPart.set(part, row); // 전압 전용 행으로 교체
+    }
+  });
+  selectedByPart.forEach(row=>addBom(resultMap,row,source,row._qty));
+}
+
+function getHeaterInputs(){
+  return Array.from({length:8},(_,i)=>num(getInputValue(`HT-0${i+1}`))).filter(v=>v!==null && v>0);
+}
+function getPumpInputs(){
+  return Array.from({length:6},(_,i)=>num(getInputValue(`PC-0${i+1}`))).filter(v=>v!==null && v>0);
+}
+function getCompInputs(){
+  return Array.from({length:6},(_,i)=>num(getInputValue(`PC-${String(i+7).padStart(2,'0')}`))).filter(v=>v!==null && v>0);
+}
+
+// TEM SMPS 모델별 전류값 (사용자 확정)
+const TEM_SMPS_CURRENT = {
+  'NHPP-6921': 19,
+  'NHPP-7325': 23,
+  'CHPP-8022': 27,
+};
+function getTemSmpsCurrent(){
+  const rcpChPerSmps = num(getInputValue('TEM-05')) || 0;
+  return ['TEM-01','TEM-02','TEM-03','TEM-04'].reduce((sum, id)=>{
+    const selected = getInputValue(id);
+    return sum + (TEM_SMPS_CURRENT[selected] || 0) * rcpChPerSmps;
+  }, 0);
+}
+
+function calcMainBreakerCurrent(voltage){
+  const v = num(voltage);
+  const pumpSum = getPumpInputs().reduce((a,b)=>a+b,0);
+  const compSum = getCompInputs().reduce((a,b)=>a+b,0);
+  const heaterCurrentSum = v ? getHeaterInputs().reduce((a,w)=> a + (w/(v*1.732)), 0) : 0;
+  const rawCurrent = pumpSum + compSum + heaterCurrentSum + getTemSmpsCurrent();
+
+  const sf = num(getInputValue('PWR-02'));
+  const safetyFactor = (sf !== null && sf > 0) ? sf : 1.2;
+
+  return rawCurrent * safetyFactor;
+}
+
+// MAINBREAKER_CHECK_MAP: MainBreaker 시트 전용 'OO' → 체크박스 매핑.
+// OPTION_CHECK_MAP과 이름 형태(' Check' 접미사)가 달라서 별도 표로 둔다.
+const MAINBREAKER_CHECK_MAP = {
+  'Main MC': 'PWR-03',
+  'Power TB': 'PWR-04',
+};
+
+function addMainBreaker(resultMap, rows, voltage){
+  const current = calcMainBreakerCurrent(voltage);
+  rows.forEach(row=>{
+    if(!voltageMatch(row, voltage)) return;
+
+    const h = norm(row.H);
+    if(h){
+      if(MAINBREAKER_CHECK_MAP[h]){
+        if(getInputValue(MAINBREAKER_CHECK_MAP[h]) !== 'Y') return;
+      } else {
+        return; // 그 외 H열 있는 행은 부속품 — 여기서는 처리하지 않는다.
+      }
+    }
+
+    if(!rangeMatchOrAll(current, row.F, row.G)) return;
+    addBom(resultMap, row, 'MainBreaker', row._qty);
+  });
+  return current;
+}
+
+function getDeviceChannelCounts(){
+  return {
+    heaterCh: getHeaterInputs().length,
+    pumpCh: getPumpInputs().length,
+    compCh: getCompInputs().length,
+  };
+}
+
+// TEM Ch = TEM-01~04(SMPS1~4) 중 값이 선택된 개수
+function getTemCh(){
+  return ['TEM-01','TEM-02','TEM-03','TEM-04'].filter(id => !!getInputValue(id)).length;
+}
+
+// 총 PE 수량 = Heater Ch×2 + Pump Ch + Compressor Ch + TEM Ch×3 + Fan 수량
+//              + (TR 선택 시 +3) + (SMPS 선택 시 +2)
+// (BOM 품목에는 넣지 않고, Busbar 수량 계산의 분자로도 그대로 쓰인다)
+// TEM SMPS '수량' = 선택된 슬롯 수 × RCP Ch(수동 입력, 슬롯당 몇 대 필요한지).
+// SMPS 자재 수량, Input/Output, DA Ch, MainBreaker 전류, PE가 전부 이 값을 기준으로 늘어난다.
+function getTemSmpsQty(){
+  const rcpChPerSmps = num(getInputValue('TEM-05')) || 0;
+  return getTemCh() * rcpChPerSmps;
+}
+
+function calcPEQuantity(){
+  const {heaterCh, pumpCh, compCh} = getDeviceChannelCounts();
+  const temQty = getTemSmpsQty();
+  const fan = num(getInputValue('FAN-01')) || 0;
+  const trSelected = getInputValue('ETC-03') === 'Y';
+  const smpsSelected = !!getInputValue('ETC-01') && !!getInputValue('ETC-02');
+
+  return (heaterCh * 2) + pumpCh + compCh + (temQty * 3) + fan
+    + (trSelected ? 3 : 0)
+    + (smpsSelected ? 2 : 0);
+}
+
+// 기본자재의 Busbar 항목: H열='Y'인 행만 추출하고 'N'은 제외한다.
+// 수량 = CEILING(PE 수량 / 16, 1) (16접점 기준)
+function addBusbar(resultMap, rows){
+  const peQty = calcPEQuantity();
+  if(peQty <= 0) return;
+  const busbarQty = ceilDiv(peQty, 16);
+  rows.forEach(row=>{
+    if(norm(row.C).toLowerCase() !== 'busbar') return;
+    if(norm(row.H).toUpperCase() !== 'Y') return; // H='N'은 제외
+    addBom(resultMap, row, '기본자재', busbarQty);
+  });
+}
+
+function calcDigitalChannels(){
+  const {heaterCh, pumpCh, compCh} = getDeviceChannelCounts();
+  const valveCP = (num(getInputValue('VAL-02'))||0) + (num(getInputValue('VAL-04'))||0);
+  const valveAC = num(getInputValue('VAL-01'))||0;
+  const valveDC = num(getInputValue('VAL-03'))||0;
+  const leak = num(getInputValue('SNS-01'))||0;
+  const level = num(getInputValue('SNS-02'))||0;
+  // Float/Photocell 체크는 Digital Input에 별도로 더하지 않는다.
+  // Level 수량(SNS-02)에 이미 그만큼의 Input이 반영되어 있기 때문.
+  const fan = num(getInputValue('FAN-01'))||0;
+  const smokeAdd = (num(getInputValue('SMK-02'))||0) > 0 ? 2 : 0;
+  const inputAdd = num(getInputValue('PLC-12'))||0;
+  const outputAdd = num(getInputValue('PLC-14'))||0;
+  // TEM SMPS 수량(선택 슬롯 수 × RCP Ch) 1당 Input +2, Output +3 (사용자 확정)
+  const temQty = getTemSmpsQty();
+  const temInput = temQty * 2;
+  const temOutput = temQty * 3;
+
+  const totalDI = (pumpCh*2) + (heaterCh*7) + (compCh*4) + valveCP + leak + level + fan + smokeAdd + inputAdd + temInput;
+  const totalDO = (heaterCh*2) + (pumpCh*1) + (compCh*1) + valveAC + valveDC + outputAdd + temOutput;
+  return {totalDI, totalDO};
+}
+
+function addDigitalIOCards(resultMap, rows, pending){
+  const remoteChecked = getInputValue('PLC-16') === 'Y';
+  // Remote I/O를 선택하면 카드 용량 선택과 무관하게 16Ch를 분모로 사용한다 (문서 15.5)
+  const diCardSize = remoteChecked ? 16 : (num(getInputValue('PLC-11')) || 16);
+  const doCardSize = remoteChecked ? 16 : (num(getInputValue('PLC-13')) || 16);
+  const {totalDI, totalDO} = calcDigitalChannels();
+  const diCards = ceilDiv(totalDI, diCardSize);
+  const doCards = ceilDiv(totalDO, doCardSize);
+
+  if(diCards > 0){
+    const row = pickPLCRow(rows, 'DI', remoteChecked, diCardSize);
+    if(row) addBom(resultMap, row, 'PLC', diCards);
+  }
+  if(doCards > 0){
+    const row = pickPLCRow(rows, 'DO', remoteChecked, doCardSize);
+    if(row) addBom(resultMap, row, 'PLC', doCards);
+  }
+}
+
+// PLC 시트는 같은 부품구분(C열)에 '일반형'과 'remote형' 행이 함께 있고,
+// DI/DO는 추가로 H열에 카드 용량(16/32/64)이 표시되어 있다.
+// Remote I/O 선택 여부와 (해당 시) 선택한 카드 용량에 맞는 행을 고른다.
+function pickPLCRow(rows, partCode, remoteChecked, sizeMatch){
+  const candidates = findRowsByPart(rows, partCode);
+  if(!candidates.length) return null;
+  if(remoteChecked){
+    return candidates.find(r => norm(r.H).toLowerCase().includes('remote')) || null;
+  }
+  if(sizeMatch){
+    // 문자열 완전일치 대신 숫자 비교를 쓴다 — 시트 H열에 공백/전각 숫자 등
+    // 표기 차이가 있어도 안전하게 매칭되도록 하기 위함.
+    const bySize = candidates.find(r => num(r.H) === num(sizeMatch));
+    if(bySize) return bySize;
+  }
+  // remote 표시가 없는 첫 행을 '일반형'으로 취급한다.
+  return candidates.find(r => !norm(r.H).toLowerCase().includes('remote')) || candidates[0];
+}
+
+// RTD/TC/AI/AO 카드
+function addAnalogIO(resultMap, rows, pending){
+  const remoteChecked = getInputValue('PLC-16') === 'Y';
+
+  const rtdCh = num(getInputValue('PLC-02')) || 0;
+  const rtdQty = ceilDiv(rtdCh, 4);
+  if(rtdQty > 0){
+    const row = pickPLCRow(rows, 'RTD', remoteChecked);
+    if(row) addBom(resultMap, row, 'PLC', rtdQty);
+  }
+
+  const tcCh = num(getInputValue('PLC-03')) || 0;
+  const tcQty = ceilDiv(tcCh, 4);
+  if(tcQty > 0){
+    const row = pickPLCRow(rows, 'TC', remoteChecked);
+    if(row) addBom(resultMap, row, 'PLC', tcQty);
+  }
+
+  // AD Ch → AI 카드: CEILING(AD/8,1) (문서 15.2 BOM-PLC-A001)
+  const adCh = num(getInputValue('PLC-01')) || 0;
+  const aiQty = ceilDiv(adCh, 8);
+  if(aiQty > 0){
+    const row = pickPLCRow(rows, 'AI', remoteChecked);
+    if(row) addBom(resultMap, row, 'PLC', aiQty);
+  }
+
+  // DA(AO) 카드: Board는 모두 1Ch로 취급 → (Board1+2+3 EA 합 + ETC EA + TEM SMPS DA Ch) / 8 올림 (문서 15.2 BOM-PLC-A004)
+  // Board 부품 자체(옵션자재의 Board 항목, EA 수량)는 별도 옵션자재 매칭에서 이미 처리된다.
+  // TEM SMPS 수량(선택 슬롯 수 × RCP Ch) 1당 DA Ch +1 (사용자 확정)
+  const boardChTotal =
+    (num(getInputValue('PLC-05')) || 0) +
+    (num(getInputValue('PLC-07')) || 0) +
+    (num(getInputValue('PLC-09')) || 0) +
+    getTemSmpsQty();
+  const etcCh = num(getInputValue('PLC-10')) || 0;
+  const aoQty = ceilDiv(boardChTotal + etcCh, 8);
+  if(aoQty > 0){
+    const row = pickPLCRow(rows, 'AO', remoteChecked);
+    if(row) addBom(resultMap, row, 'PLC', aoQty);
+  }
+}
+
+// Communication: 입력 수량을 그대로 필요 수량으로 반영 (문서 15.7)
+function addCommunication(resultMap, rows){
+  const fieldToPart = [
+    ['COM-01', '232(2port)'],
+    ['COM-02', 'RS485/422'],
+    ['COM-03', 'RS232/485'],
+    ['COM-04', 'Ethernet'],
+    ['COM-05', 'Devicent'],
+    ['COM-06', 'I/O Board'],
+  ];
+  const temChecked = getInputValue('TEM-08') === 'Y';
+  const rcpCh = num(getInputValue('TEM-05')) || 0;
+
+  fieldToPart.forEach(([fieldId, partCode])=>{
+    const rawQty = num(getInputValue(fieldId));
+    if(!rawQty || rawQty <= 0) return;
+    let qty = rawQty;
+    // I/O Board는 Board Communication 소속이라 전기식 체크 시 수량이 RCP Ch로 바뀐다.
+    if(fieldId === 'COM-06' && temChecked && rcpCh > 0) qty = rawQty * rcpCh;
+    addFirstMatch(resultMap, rows, 'PLC', partCode, qty);
+  });
+}
+
+// 채널 공식(RTD/TC/AI/AO/DI/DO)과 통신 수량 입력(Communication)으로 이미 처리되는
+// 부품구분은 여기서 제외한다. 그 외 PLC 시트의 모든 행은 아래 규칙으로 처리한다.
+//   1) 같은 C열(부품구분) 값이 여러 행이면: H열에 'remote'가 있는 행 vs 없는 행 중,
+//      Remote I/O 체크 여부에 맞는 쪽 하나만 선택한다. (예: Power 2행)
+//   2) C열 값이 단독 행이면:
+//      - H열이 OPTION_CHECK_MAP에 등록된 'OO Check'면 그 체크박스가 켜졌을 때만 추가
+//        (예: 'LonWorks Check' → COM-08, 'EtherCat Check' → COM-09)
+//      - H열이 'remote'면 Remote I/O 체크 시에만, 그 외엔 항상 추가한다.
+//      (예: PLC 본체/ETC/차단기 → 항상, 새로 추가하는 remote 전용 부품 → remote 체크 시에만)
+// 새 부품을 추가하려면 시트에 행만 추가하면 되고, 코드를 다시 손댈 필요가 없다.
+const PLC_CHANNEL_CODES = new Set(['rtd','tc','di','do','ai','ao']);
+const PLC_COMM_CODES = new Set(['232(2port)','rs485/422','rs232/485','ethernet','devicent','i/o board']);
+const PLC_TERMINAL_CODES = new Set(['단자대','케이블']);
+
+// Board Communication(Comm Board/LonWorks/EtherCat)은 전기식(TEM-08) 체크 시
+// 수량이 RCP Ch(TEM-05)로 바뀐다. 체크 안 돼 있으면 기본 수량(K열, 보통 1) 그대로.
+const BOARD_COMM_RCP_FIELDS = new Set(['COM-07', 'COM-08', 'COM-09']);
+
+function addPLCGenericRows(resultMap, rows){
+  const remoteChecked = getInputValue('PLC-16') === 'Y';
+  const groups = new Map();
+
+  rows.forEach(row=>{
+    const code = norm(row.C).toLowerCase();
+    if(!code || PLC_CHANNEL_CODES.has(code) || PLC_COMM_CODES.has(code) || PLC_TERMINAL_CODES.has(code)) return;
+    if(!groups.has(code)) groups.set(code, []);
+    groups.get(code).push(row);
+  });
+
+  groups.forEach(groupRows=>{
+    if(groupRows.length > 1){
+      const remoteRow = groupRows.find(r => norm(r.H).toLowerCase() === 'remote');
+      const normalRow = groupRows.find(r => norm(r.H).toLowerCase() !== 'remote') || groupRows[0];
+      const chosen = remoteChecked ? (remoteRow || normalRow) : normalRow;
+      if(chosen) addBom(resultMap, chosen, 'PLC', chosen._qty);
+      return;
+    }
+    const row = groupRows[0];
+    const hRaw = norm(row.H);
+    if(OPTION_CHECK_MAP[hRaw]){
+      const fieldId = OPTION_CHECK_MAP[hRaw];
+      if(getInputValue(fieldId) === 'Y'){
+        let qty = row._qty;
+        if(BOARD_COMM_RCP_FIELDS.has(fieldId) && getInputValue('TEM-08') === 'Y'){
+          const rcpCh = num(getInputValue('TEM-05')) || 0;
+          if(rcpCh > 0) qty = rcpCh;
+        }
+        addBom(resultMap, row, 'PLC', qty);
+      }
+      return;
+    }
+    const isRemoteOnly = hRaw.toLowerCase() === 'remote';
+    if(isRemoteOnly){
+      if(remoteChecked) addBom(resultMap, row, 'PLC', row._qty);
+    } else {
+      addBom(resultMap, row, 'PLC', row._qty);
+    }
+  });
+}
+
+function normalizeMatchText(v){
+  // Google Sheet에서 들어오는 앞/뒤 공백, 줄바꿈, 연속 공백, NBSP 등을 정리한다.
+  return String(v ?? '')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function isMainPartConditionMatch(mainCondition, selectedPartName){
+  const name = normalizeMatchText(selectedPartName);
+  if(!mainCondition || !name) return false;
+
+  // H열에 콤마로 여러 조건을 나눠 적으면 OR로 판정한다. 예: 'EBS,EBH' → EBS 또는 EBH 중 하나라도 포함되면 매칭.
+  const conds = String(mainCondition).split(',').map(c => normalizeMatchText(c)).filter(Boolean);
+  return conds.some(cond => cond.includes(name) || name.includes(cond));
+}
+
+// 'H열 = 이미 뽑힌 품명에 포함된 문자열' 규칙은 Heater/Pump/Compressor의
+// 부속품(예: 차단기 품명에 'EBS' 포함 시 차단기 커버 추가, 'LC1'/'FRN' 포함 시 관련 부속품 추가)
+// 전용으로 설계되었다. MainBreaker의 Main MC/Power TB는 addMainBreaker 안에서
+// 정확하게(체크박스 + 전류 범위) 처리하므로 여기서 제외한다 — 안 그러면 짧은 H열 문자열이
+// 엉뚱한 품명에 우연히 포함되어 오탐(false positive)으로 잘못 추가되는 문제가 생긴다.
+const SUB_PART_SWEEP_SHEETS = ['Heater', 'Pump', 'Compressor', 'TEM'];
+
+function sweepSubParts(resultMap, masterData){
+  // 현재까지 BOM에 들어간 품명/모델명 + '그 시트가 기여한 몫'을 기준으로 H열 부속품을 찾는다.
+  // 부속품 수량 = 조건에 매칭된 '같은 시트에서 뽑힌 몫'의 수량 합.
+  // 주의: 같은 자재(material)가 여러 시트에서 공통으로 쓰이는 경우(예: MC가 Heater/Pump/
+  // Compressor에서 각각 일부씩 기여) 전체 합계가 아니라 그 시트가 실제로 기여한 만큼만 써야 한다.
+  // 안 그러면 다른 시트 몫까지 끌고 와서 수량이 부풀려진다 (qtyBySource로 시트별 몫을 따로 추적).
+  // 성능: 조건 행마다 매번 resultMap 전체를 배열로 다시 만들지 않도록 한 번만 계산해서 재사용한다.
+  const allEntries = Array.from(resultMap.values()).filter(x => norm(x.name) && x.qtyBySource);
+
+  SUB_PART_SWEEP_SHEETS.forEach(sheetName=>{
+    const rows = masterData[sheetName] || [];
+    const sameSheetEntries = allEntries.filter(x => x.qtyBySource[sheetName] > 0);
+
+    rows.forEach(row=>{
+      const cond = norm(row.H);
+      if(!cond) return;
+
+      const matchedQty = sameSheetEntries.reduce((sum, x)=>{
+        return isMainPartConditionMatch(cond, norm(x.name)) ? sum + x.qtyBySource[sheetName] : sum;
+      }, 0);
+
+      if(matchedQty > 0){
+        // 부속품 자체의 K열 배수(예: 메인 1개당 2개 필요)를 곱해서 반영한다.
+        const perMatchMultiplier = num(row._qty) || 1;
+        addBom(resultMap, row, `${sheetName}(Sub)`, matchedQty * perMatchMultiplier);
+      }
+    });
+  });
+}
+
+// Valve AC/DC 릴레이: A열='Valve', H열='AC'/'DC'인 행을 입력 수량만큼 그대로 추가한다.
+
+// Pump Inverter: PC-13(Inverter 체크) 켜졌을 때만 추출한다.
+// 시트에 전압 전용 그룹(208/440)과 전압무관 공통 그룹(ALL, TB3 시리즈)이 함께 있어서,
+// 전압 전용 그룹에 맞는 행이 있으면 그걸 우선 쓰고, 없으면 공통 그룹에서 찾는다.
+// (전압 전용/공통 두 그룹 중 어느 걸 우선해야 하는지는 가정이라 확인 필요할 수 있음)
+// DI/DO 32 또는 64 카드를 쓸 때 필요한 단자대(XTB-40H)/케이블(C40HH-05PH).
+// In/Out 각각 독립적으로: 32면 1개, 64면 2개. 16이나 remote는 필요 없음 (사용자 확정).
+function addPLCTerminalAccessories(resultMap, rows){
+  const remoteChecked = getInputValue('PLC-16') === 'Y';
+  if(remoteChecked) return;
+
+  const sizeQty = (size) => {
+    const n = num(size);
+    if(n === 32) return 1;
+    if(n === 64) return 2;
+    return 0;
+  };
+  const qty = sizeQty(getInputValue('PLC-11')) + sizeQty(getInputValue('PLC-13'));
+  if(qty <= 0) return;
+
+  const terminalRow = rows.find(r => norm(r.C).toLowerCase() === '단자대');
+  const cableRow = rows.find(r => norm(r.C).toLowerCase() === '케이블');
+  if(terminalRow) addBom(resultMap, terminalRow, 'PLC', qty);
+  if(cableRow) addBom(resultMap, cableRow, 'PLC', qty);
+}
+
+// TEM 시트 (사용자 확정 규칙, 확인 완료된 부분만 반영)
+//  - SMPS(TEM-01~04): 각 슬롯에서 고른 모델명(J열)과 일치하는 행을 추가한다.
+//    같은 모델이 여러 슬롯에서 선택되면 addBom이 자동으로 수량을 합산한다.
+//  - Cable(TEM-06): 'Single'/'Dual' 선택에 따라 H='Single check'/'Dual check' 행 세트를 전부 추가한다.
+//  - POU: A열='POU'인 모든 행을 (선택된 SMPS 개수 × RCP Ch 수동 입력값) 수량만큼 추가한다.
+//  - Temos(TEM-07) 체크 시 CHPC-TMS1V2(A열='Temos')를, 선택된 SMPS 총 개수(TEM Ch)만큼 추가한다.
+// TEM 차단기/MC(F~G 전류 범위)와 RCP 부속품(H='LC1' 등 문자열 매칭)은 아직 미확정이라 다루지 않는다.
+// SMPS(NHPP/CHPP)가 하나라도 선택되면 같이 필요한 차단기/MC/Relay (사용자 확정: "그냥 필요한거야")
+//  - 차단기(GV2-ME216/326): 슬롯별로 선택된 모델의 전류(19/23/27A)에 맞는 행을 그 슬롯의 RCP Ch만큼 추가
+//  - MC(LC1-D386 BL): 모든 SMPS 전류(0~38A 범위 안)에 공통이라 모델 구분 없이 총 수량만큼 1행 추가
+//  - Relay 중 H열이 비어있는 것들: 마찬가지로 총 수량만큼 추가
+// 수량은 지금까지 TEM 전체에 적용해온 규칙(RCP Ch 기준)을 그대로 따랐음 — 다를 수 있으면 알려주세요.
+function addTemAccessories(resultMap, rows){
+  const rcpChPerSmps = num(getInputValue('TEM-05')) || 0;
+  if(rcpChPerSmps <= 0) return;
+
+  const selectedModels = ['TEM-01','TEM-02','TEM-03','TEM-04']
+    .map(id => getInputValue(id))
+    .filter(Boolean);
+  if(!selectedModels.length) return;
+
+  // 차단기: 슬롯별 모델 전류에 맞는 행을 찾아 그 슬롯의 RCP Ch만큼 추가
+  selectedModels.forEach(model=>{
+    const current = TEM_SMPS_CURRENT[model];
+    if(!current) return;
+    const row = rows.find(r => norm(r.C).toLowerCase() === '차단기' && rangeMatchOrAll(current, r.F, r.G));
+    if(row) addBom(resultMap, row, 'TEM', rcpChPerSmps);
+  });
+
+  const temQty = getTemSmpsQty();
+
+  // MC: 모델 구분 없이 총 수량만큼
+  const mcRow = rows.find(r => norm(r.C).toLowerCase() === 'mc');
+  if(mcRow && temQty > 0) addBom(resultMap, mcRow, 'TEM', temQty);
+
+  // Relay 중 H열이 비어있는 것들: 총 수량만큼
+  rows.filter(r => norm(r.C).toLowerCase() === 'relay' && !norm(r.H))
+      .forEach(r => { if(temQty > 0) addBom(resultMap, r, 'TEM', temQty); });
+}
+
+function addTemItems(resultMap, rows){
+  // SMPS: 슬롯당 수량 = RCP Ch(같은 모델이 여러 슬롯에서 선택되면 addBom이 합산)
+  const rcpChPerSmps = num(getInputValue('TEM-05')) || 0;
+  ['TEM-01','TEM-02','TEM-03','TEM-04'].forEach(fieldId=>{
+    const selected = getInputValue(fieldId);
+    if(!selected || rcpChPerSmps <= 0) return;
+    const row = rows.find(r => norm(r.C).toLowerCase() === 'smps' && norm(r.J) === selected);
+    if(row) addBom(resultMap, row, 'TEM', rcpChPerSmps);
+  });
+
+  // Cable: 수량은 RCP Ch(TEM-05)만큼 (Single/Dual 둘 다 동일)
+  const cableChoice = getInputValue('TEM-06'); // 'Single' 또는 'Dual'
+  const rcpChForCable = num(getInputValue('TEM-05')) || 0;
+  if(cableChoice && rcpChForCable > 0){
+    const tag = `${cableChoice} check`.toLowerCase();
+    rows.filter(r => norm(r.C).toLowerCase() === 'cable' && norm(r.H).toLowerCase() === tag)
+        .forEach(r => addBom(resultMap, r, 'TEM', rcpChForCable));
+  }
+
+  // POU: (선택된 SMPS 개수) × (RCP Ch 수동 입력값) 만큼
+  const temQty = getTemSmpsQty();
+  if(temQty > 0){
+    rows.filter(r => norm(r.A).toLowerCase() === 'pou')
+        .forEach(r => addBom(resultMap, r, 'POU', temQty));
+  }
+
+  // Temos: 선택된 SMPS 총 수량(슬롯 수 × RCP Ch)만큼
+  if(getInputValue('TEM-07') === 'Y'){
+    const temosRow = rows.find(r => norm(r.A).toLowerCase() === 'temos');
+    if(temosRow && temQty > 0) addBom(resultMap, temosRow, 'TEM', temQty);
+  }
+}
+
+function addValveRelays(resultMap, rows, voltage){
+  const acQty = num(getInputValue('VAL-01')) || 0;
+  const dcQty = num(getInputValue('VAL-03')) || 0;
+
+  const findValveRow = (marker) => rows.find(row=>{
+    if(!voltageMatch(row, voltage)) return false;
+    if(norm(row.A).toLowerCase() !== 'valve') return false;
+    return norm(row.H).toUpperCase() === marker;
+  });
+
+  if(acQty > 0){
+    const row = findValveRow('AC');
+    if(row) addBom(resultMap, row, '옵션자재(Valve)', acQty);
+  }
+  if(dcQty > 0){
+    const row = findValveRow('DC');
+    if(row) addBom(resultMap, row, '옵션자재(Valve)', dcQty);
+  }
+}
+
+// Level(A열) 그룹: 같은 A='Level' 안에 서로 다른 UI 조건에 매인 행들이 섞여 있다.
+//   H='Leak'      → SNS-01(Leak) 값이 있을 때, 그 수량만큼 (Relay, Relay Socket 등 여러 행 모두)
+//   H='Photocell' → SNS-02(Level) 값이 있을 때, 그 수량만큼 (Level 센서 행)
+// Smoke(A열) 차단기: Detector Model을 선택하면 같이 필요한 차단기.
+// 수량은 선택한 Detector의 EA(SMK-02)와 동일하게 맞춘다.
+// FAN(A열): FAN 차단기를 제외한 모든 FAN 관련 행(FAN 본체, FAN Cover 등)을
+// FAN-01(EA) 수량만큼 그대로 추출한다. FAN 차단기는 별도 처리 대상이라 제외한다.
+function addFanItems(resultMap, rows, voltage){
+  const fanQty = num(getInputValue('FAN-01')) || 0;
+  if(fanQty <= 0) return;
+  rows.forEach(row=>{
+    if(norm(row.A).toLowerCase() !== 'fan') return;
+    if(norm(row.C).toLowerCase() === 'fan 차단기') return; // 차단기는 제외
+    if(!voltageMatch(row, voltage)) return;
+    addBom(resultMap, row, 'FAN', fanQty);
+  });
+}
+
+// Fan+Motor 수(ABS-S04PA-CN, 자재번호 1200286000): (Fan + Heater + Pump + Compressor 수) / 4 올림.
+// 시트에 딱 맞는 A/C/H 조건이 없어서 자재번호로 직접 매칭한다.
+function addFanMotorItem(resultMap, rows){
+  const fan = num(getInputValue('FAN-01')) || 0;
+  const heaterCh = getHeaterInputs().length;
+  const pumpCh = getPumpInputs().length;
+  const compCh = getCompInputs().length;
+  const total = fan + heaterCh + pumpCh + compCh;
+  if(total <= 0) return;
+
+  const qty = ceilDiv(total, 4);
+  const row = rows.find(r => norm(r.I) === '1200286000');
+  if(row && qty > 0) addBom(resultMap, row, '옵션자재', qty);
+}
+
+function addSmokeBreaker(resultMap, rows, voltage){
+  const model = getInputValue('SMK-01');
+  if(!model) return;
+  const ea = num(getInputValue('SMK-02')) || 1;
+  rows.forEach(row=>{
+    if(norm(row.A).toLowerCase() !== 'smoke') return;
+    if(norm(row.C).toLowerCase() !== '차단기') return;
+    if(!voltageMatch(row, voltage)) return;
+    addBom(resultMap, row, '옵션자재(Smoke)', ea);
+  });
+}
+
+function addLevelSensorItems(resultMap, rows, voltage){
+  const leakQty = num(getInputValue('SNS-01')) || 0;
+  const levelQty = num(getInputValue('SNS-02')) || 0;
+  const photocellChecked = getInputValue('SNS-04') === 'Y';
+
+  rows.forEach(row=>{
+    if(norm(row.A).toLowerCase() !== 'level') return;
+    if(!voltageMatch(row, voltage)) return;
+    const tag = norm(row.H).toLowerCase();
+    if(tag === 'leak'){
+      if(leakQty > 0) addBom(resultMap, row, '옵션자재(Level)', leakQty);
+    } else if(tag === 'photocell'){
+      // Photocell 체크박스가 켜져 있을 때만 추가하고, 수량은 Level 수량만큼
+      if(photocellChecked && levelQty > 0) addBom(resultMap, row, '옵션자재(Level)', levelQty);
+    }
+  });
+}
+
+function addPowermeterAndCT(resultMap, rows, voltage){
+  const selectedModel = norm(getInputValue('PM-01'));
+  if(!selectedModel) return;
+
+  // 선택한 Powermeter Model 자체를 정확히 1회 BOM에 추가
+  rows.forEach(row=>{
+    if(!voltageMatch(row, voltage)) return;
+    const category = norm(row.C).toLowerCase();
+    const itemName = norm(row.J);
+    if(category === '전력량계' && itemName === selectedModel){
+      addBom(resultMap, row, '옵션자재(Powermeter)', row._qty);
+    }
+  });
+
+  // CT Ch는 H열의 메인부품조건과 선택한 Powermeter Model을 부분 문자열 기준으로 매칭한다.
+  // 예: H열=GEMS3521, 선택 Model=GEMS3521-AT → 매칭
+  // 수량 = CT Ch × 2EA
+  const ctCh = num(getInputValue('PM-03')) || 0;
+  if(ctCh <= 0) return;
+  rows.forEach(row=>{
+    if(!voltageMatch(row, voltage)) return;
+    const category = norm(row.C).toLowerCase();
+    const mainCondition = norm(row.H);
+    if(category !== 'ct' || !mainCondition) return;
+
+    const matched = isMainPartConditionMatch(mainCondition, selectedModel);
+
+    if(matched){
+      // CT 수량은 Powermeter Model에 따라 다름
+      // GEMS / KM50 계열 등 기존 CT는 1Ch당 2EA
+      // ACCURA 계열은 1Ch당 1EA
+      const ctPerCh = selectedModel.toUpperCase().includes('ACCURA') ? 1 : 2;
+      addBom(resultMap, row, '옵션자재(CT)', ctCh * ctPerCh);
+    }
+  });
+}
+
+function isOptionSelected(row){
+  const category = (norm(row.A) + ' ' + norm(row.C)).toUpperCase();
+  const itemName = norm(row.J);
+  const h = norm(row.H);
+  if(!category.trim() && !itemName) return false;
+
+  // H열 "OO Check" 통일 규칙 (UPS/SDC/Phase Relay/Consent/Comm Board)
+  if(OPTION_CHECK_MAP[h]) return getInputValue(OPTION_CHECK_MAP[h]) === 'Y';
+
+  // CUS 계열 (SDC는 위 통일 규칙으로 이동, SEC/Hynix만 카테고리 기준 유지)
+  if(category.includes('SEC')) return getInputValue('CUS-01') === 'Y';
+  if(category.includes('HYNIX')) return getInputValue('CUS-03') === 'Y';
+
+  // TR: H열이 전압(220/440)을 반복 표기할 뿐 조건이 아니므로 TR 체크박스로만 판정
+  if(category.includes('TR') || category.includes('TRANS')) return getInputValue('ETC-03') === 'Y';
+
+  if(category.includes('SMPS')){
+    // Volt/Watt 둘 다 선택돼야 하고, 행의 B(Voltage)/D~E(용량W) 조건과 실제로 일치해야 한다.
+    const smpsVolt = getInputValue('ETC-01');
+    const smpsWatt = getInputValue('ETC-02');
+    if(!smpsVolt || !smpsWatt) return false;
+    if(!voltageMatch(row, smpsVolt)) return false;
+    return rangeMatchOrAll(num(smpsWatt), row.D, row.E);
+  }
+
+  // Sensor 계열 (Level 그룹의 Leak/Photocell은 addLevelSensorItems에서 별도 처리)
+  if(category.includes('FLOAT')) return getInputValue('SNS-03') === 'Y';
+  if(category.includes('PHOTOCELL')) return getInputValue('SNS-04') === 'Y';
+  if((category.includes('DETECTOR') || category.includes('DETECOR')) && getInputValue('SMK-01') === itemName) return true;
+
+  // PLC Board 계열
+  if(category.includes('BOARD') && (getInputValue('PLC-04') === itemName || getInputValue('PLC-06') === itemName || getInputValue('PLC-08') === itemName)) return true;
+
+  return false;
+}
+
+// [솔루션 적용] 아무것도 체크/입력 안 했을 경우 체크
+function hasUserSelections(){
+  return Object.values(FIELD_STATE).some(val => {
+    if(val === 'Y') return true;
+    if(typeof val === 'string' && val.trim() !== '' && val !== 'N') return true;
+    return false;
+  });
+}
+
+// BOM 종합 계산 엔진
+async function generateBOMData(){
+  // [예외 처리] 선택 사항 검증
+  if(!hasUserSelections()){
+    return { resultList: [], pending: [], emptySelection: true };
+  }
+
+  const masterData = await fetchBOMMasterData();
+  const resultMap = new Map();
+  const pending = [];
+  const voltage = getInputValue('PWR-01');
+
+  // 1. 기본자재 (Busbar는 H열 Y/N 조건, FAN은 FAN-01 수량 조건이 있어 별도 함수에서 처리하므로 여기서 제외)
+  (masterData['기본자재'] || []).forEach(r => {
+    if(norm(r.C).toLowerCase() === 'busbar') return;
+    if(norm(r.A).toLowerCase() === 'fan') return;
+    addBom(resultMap, r, '기본자재', r._qty);
+  });
+  addBusbar(resultMap, masterData['기본자재'] || []);
+
+  // 2. 옵션자재
+  (masterData['옵션자재'] || []).forEach(r => {
+    if(voltageMatch(r, voltage) && isOptionSelected(r)){
+      let qty = r._qty;
+      // Board 수량 반영
+      if(norm(r.J) === getInputValue('PLC-04')) qty = num(getInputValue('PLC-05')) || 1;
+      else if(norm(r.J) === getInputValue('PLC-06')) qty = num(getInputValue('PLC-07')) || 1;
+      else if(norm(r.J) === getInputValue('PLC-08')) qty = num(getInputValue('PLC-09')) || 1;
+      // Smoke Sensor EA 반영
+      else if(norm(r.J) === getInputValue('SMK-01')) qty = num(getInputValue('SMK-02')) || 1;
+      // Comm Board Check: 전기식 체크 시 수량이 RCP Ch로 바뀐다 (PLC의 Board Communication과 동일 규칙)
+      else if(norm(r.H) === 'Comm Board Check' && getInputValue('TEM-08') === 'Y'){
+        const rcpCh = num(getInputValue('TEM-05')) || 0;
+        if(rcpCh > 0) qty = rcpCh;
+      }
+
+      addBom(resultMap, r, '옵션자재', qty);
+    }
+  });
+
+  // 2-1. Powermeter Model + CT
+  addPowermeterAndCT(resultMap, masterData['옵션자재'] || [], voltage);
+  addValveRelays(resultMap, masterData['옵션자재'] || [], voltage);
+  addLevelSensorItems(resultMap, masterData['옵션자재'] || [], voltage);
+  addSmokeBreaker(resultMap, masterData['옵션자재'] || [], voltage);
+  addFanItems(resultMap, [...(masterData['기본자재']||[]), ...(masterData['옵션자재']||[])], voltage);
+  addFanMotorItem(resultMap, masterData['옵션자재'] || []);
+
+  // 3. Heater Watts
+  getHeaterInputs().forEach(w => addByCondition(resultMap, masterData['Heater'] || [], 'Heater', voltage, w, 'W'));
+
+  // 4. Pump Amperes
+  // Inverter 체크 + Main MC 체크가 동시에 켜지면 Pump 자체 MC는 불필요하다 (사용자 확정).
+  // 그 외의 경우엔 기존처럼 MC를 그대로 추출한다.
+  const pumpInverterChecked = getInputValue('PC-13') === 'Y';
+  const suppressPumpMC = pumpInverterChecked && getInputValue('PWR-03') === 'Y';
+  const pumpRowsForCondition = (masterData['Pump'] || []).filter(r =>
+    !(suppressPumpMC && norm(r.C).toLowerCase() === 'mc')
+  );
+  getPumpInputs().forEach(a => addByCondition(resultMap, pumpRowsForCondition, 'Pump', voltage, a, 'A'));
+
+  // 5. Compressor Amperes
+  getCompInputs().forEach(a => addByCondition(resultMap, masterData['Compressor'] || [], 'Compressor', voltage, a, 'A'));
+
+  // 6. MainBreaker
+  const mainBreakerCurrent = addMainBreaker(resultMap, masterData['MainBreaker'] || [], voltage);
+
+  // 7. PLC Cards
+  addDigitalIOCards(resultMap, masterData['PLC'] || [], pending);
+  addAnalogIO(resultMap, masterData['PLC'] || [], pending);
+  addCommunication(resultMap, masterData['PLC'] || []);
+  addPLCGenericRows(resultMap, masterData['PLC'] || []);
+  addPLCTerminalAccessories(resultMap, masterData['PLC'] || []);
+
+  // 8. TEM
+  if(getInputValue('TEM-08') === 'Y'){
+    addTemItems(resultMap, masterData['TEM'] || []);
+    addTemAccessories(resultMap, masterData['TEM'] || []);
+  }
+
+  // 9. H열 스윕 (부속품 자동 매칭)
+  sweepSubParts(resultMap, masterData);
+
+  const resultList = Array.from(resultMap.values()).map((item, idx)=>({
+    no: idx + 1,
+    materialNo: item.materialNo,
+    name: item.name,
+    quantity: item.quantity,
+    source: Array.from(item.sources).join(', ')
+  }));
+
+  return { resultList, pending, emptySelection: false };
+}
+
+// ---- UI Modal & Action Handlers ----
+const bomModal = document.getElementById('bom-modal');
+
+document.addEventListener('click', async (e) => {
+if (e.target.id !== 'bom-btn-side') return;
+  const btn = document.getElementById('bom-btn-side');
+  btn.disabled = true;
+  btn.textContent = 'PART LIST 산출 중...';
+
+  try {
+    const { resultList, pending, emptySelection } = await generateBOMData();
+
+    // 아무 옵션도 체크하지 않았을 경우 경고창 출력 및 종료
+    if(emptySelection){
+      alert('선택된 옵션이나 입력된 값이 없습니다. 최소 1개 이상의 옵션을 체크하거나 입력해주세요.');
+      return;
+    }
+
+    LAST_BOM_RESULT = resultList;
+
+    const tbody = document.getElementById('bom-result-body');
+    if(resultList.length === 0){
+      tbody.innerHTML = '<div class="bom-empty">산출된 BOM 항목이 없습니다.</div>';
+    } else {
+      tbody.innerHTML = resultList.map(r=>`
+        <div class="bom-grid-row">
+          <div class="num">${r.no}</div>
+          <div>${escapeHtml(r.materialNo)}</div>
+          <div>${escapeHtml(r.name)}</div>
+          <div class="num">${r.quantity}</div>
+          <div>${escapeHtml(r.source)}</div>
+        </div>
+      `).join('');
+    }
+
+    const summaryEl = document.getElementById('bom-summary');
+    const totalQty = resultList.reduce((acc, x) => acc + x.quantity, 0);
+    const peQty = calcPEQuantity();
+    summaryEl.innerHTML = `
+      <div class="bom-summary-card">
+        <div class="bom-summary-label">총 자재 종류</div>
+        <div class="bom-summary-value">${resultList.length} 건</div>
+      </div>
+      <div class="bom-summary-card">
+        <div class="bom-summary-label">총 수량</div>
+        <div class="bom-summary-value">${totalQty} EA</div>
+      </div>
+      <div class="bom-summary-card">
+        <div class="bom-summary-label">PE 예상 수량</div>
+        <div class="bom-summary-value">${peQty} EA</div>
+      </div>
+    `;
+
+    const errEl = document.getElementById('bom-error');
+    if(pending.length > 0){
+      errEl.innerHTML = `<div class="bom-error"><strong>확인 필요 사항:</strong><br/>${pending.map(p=>`• ${escapeHtml(p)}`).join('<br/>')}</div>`;
+    } else {
+      errEl.innerHTML = '';
+    }
+
+    bomModal.classList.add('open');
+  } catch(e) {
+    alert(`PART LIST 산출 중 오류가 발생했습니다: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'PART LIST 작성';
+  }
+});
+
+document.getElementById('bom-close-btn').addEventListener('click', ()=>{
+  bomModal.classList.remove('open');
+});
+
+document.getElementById('bom-export-btn').addEventListener('click', ()=>{
+  if(!LAST_BOM_RESULT.length){
+    alert('내보낼 PART LIST 데이터가 없습니다.');
+    return;
+  }
+  const wsData = [
+    ['No.', '자재번호', '품명', '수량', '출처'],
+    ...LAST_BOM_RESULT.map(r => [r.no, r.materialNo, r.name, r.quantity, r.source])
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'PART_LIST');
+  XLSX.writeFile(wb, `PART_LIST_${new Date().toISOString().slice(0,10)}.xlsx`);
+});
+
+// App Initialize
+renderAll();
+initMasterData();
+</script>
+</body>
+</html>
